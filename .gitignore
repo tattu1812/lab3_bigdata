@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local configuration
+config/team.json
+.env
+.env.*
+*.pem
+*.key
+
+# Runtime and evidence
+evidence/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Instructor-provided files and datasets
+data/
+trusted_lab3_inputs.json
+trusted_lab3_inputs.sha256
+Lab3-Student-Starter.zip
+
+# System
+.DS_Store
