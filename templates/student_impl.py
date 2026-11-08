@@ -14,7 +14,28 @@ def build_gold(silver_df):
     Cast sums/min/max to decimal(18,2), mean/rate to decimal(18,6).
     No collect(), Pandas, Python UDF, or reference-sample join here.
     """
-    raise NotImplementedError('TODO 1: build_gold')
+    from pyspark.sql import functions as F
+
+    dec2 = 'decimal(18,2)'
+    dec6 = 'decimal(18,6)'
+    late_flag = F.when(F.col('is_late'), F.lit(1)).otherwise(F.lit(0))
+    agg = (silver_df
+           .groupBy('site', 'event_date')
+           .agg(F.count(F.lit(1)).cast('bigint').alias('n_observations'),
+                F.sum('temperature_c').cast(dec2).alias('sum_temperature_c'),
+                F.min('temperature_c').cast(dec2).alias('min_temperature_c'),
+                F.max('temperature_c').cast(dec2).alias('max_temperature_c'),
+                F.sum(late_flag).cast('bigint').alias('n_late'),
+                F.sum(F.when(F.col('temperature_c') > F.lit(25), F.lit(1)).otherwise(F.lit(0)))
+                 .cast('bigint').alias('n_above_25'),
+                F.countDistinct('sensor_id').cast('bigint').alias('n_sensors')))
+    # Derive mean/rate from the additive components (SUM / COUNT), not AVG.
+    return agg.select(
+        'site', 'event_date', 'n_observations', 'sum_temperature_c',
+        (F.col('sum_temperature_c') / F.col('n_observations')).cast(dec6).alias('mean_temperature_c'),
+        'min_temperature_c', 'max_temperature_c', 'n_late',
+        (F.col('n_late') / F.col('n_observations')).cast(dec6).alias('late_rate'),
+        'n_above_25', 'n_sensors')
 
 
 def choose_revisions(changes_df):
