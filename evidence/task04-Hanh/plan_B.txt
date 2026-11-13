@@ -1,0 +1,43 @@
+== Physical Plan ==
+AdaptiveSparkPlan (6)
++- HashAggregate (5)
+   +- Exchange (4)
+      +- HashAggregate (3)
+         +- Project (2)
+            +- Scan parquet  (1)
+
+
+(1) Scan parquet 
+Output [4]: [site#3482, temperature_c#3485, is_late#3486, event_date#3490]
+Batched: true
+Location: PreparedDeltaFileIndex [file:/tmp/lab3-lakehouse/g01/attempt01/benchmarks/8618df90-f09b-420d-a9c1-c77d204f83f8/date_partitioned]
+PartitionFilters: [isnotnull(event_date#3490), (event_date#3490 = 2026-02-06)]
+ReadSchema: struct<site:string,temperature_c:decimal(8,2),is_late:boolean>
+
+(2) Project
+Output [3]: [site#3482, temperature_c#3485, is_late#3486]
+Input [4]: [site#3482, temperature_c#3485, is_late#3486, event_date#3490]
+
+(3) HashAggregate
+Input [3]: [site#3482, temperature_c#3485, is_late#3486]
+Keys [1]: [site#3482]
+Functions [3]: [partial_count(1), partial_sum(UnscaledValue(temperature_c#3485)), partial_sum(CASE WHEN is_late#3486 THEN 1 ELSE 0 END)]
+Aggregate Attributes [3]: [count#3771L, sum#3772L, sum#3773L]
+Results [4]: [site#3482, count#3774L, sum#3775L, sum#3776L]
+
+(4) Exchange
+Input [4]: [site#3482, count#3774L, sum#3775L, sum#3776L]
+Arguments: hashpartitioning(site#3482, 8), ENSURE_REQUIREMENTS, [plan_id=1035]
+
+(5) HashAggregate
+Input [4]: [site#3482, count#3774L, sum#3775L, sum#3776L]
+Keys [1]: [site#3482]
+Functions [3]: [count(1), sum(UnscaledValue(temperature_c#3485)), sum(CASE WHEN is_late#3486 THEN 1 ELSE 0 END)]
+Aggregate Attributes [3]: [count(1)#3698L, sum(UnscaledValue(temperature_c#3485))#3699L, sum(CASE WHEN is_late#3486 THEN 1 ELSE 0 END)#3700L]
+Results [4]: [site#3482, count(1)#3698L AS n_observations#3683L, MakeDecimal(sum(UnscaledValue(temperature_c#3485))#3699L,18,2) AS sum_temperature_c#3684, sum(CASE WHEN is_late#3486 THEN 1 ELSE 0 END)#3700L AS n_late#3685L]
+
+(6) AdaptiveSparkPlan
+Output [4]: [site#3482, n_observations#3683L, sum_temperature_c#3684, n_late#3685L]
+Arguments: isFinalPlan=false
+
+
