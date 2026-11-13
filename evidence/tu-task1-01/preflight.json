@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "delta_smoke_path": "/tmp/lab3-lakehouse/g01/tu-task1-01/preflight-526cba70-9872-41cf-a1e5-f3133347b53b",
+  "fixture_rows": 9610,
+  "new_batch_rows": 140,
+  "implementation_file": "student_impl.py"
+}
