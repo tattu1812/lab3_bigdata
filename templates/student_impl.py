@@ -14,7 +14,28 @@ def build_gold(silver_df):
     Cast sums/min/max to decimal(18,2), mean/rate to decimal(18,6).
     No collect(), Pandas, Python UDF, or reference-sample join here.
     """
-    raise NotImplementedError('TODO 1: build_gold')
+    from pyspark.sql import functions as F
+
+    dec2 = 'decimal(18,2)'
+    dec6 = 'decimal(18,6)'
+    late_flag = F.when(F.col('is_late'), F.lit(1)).otherwise(F.lit(0))
+    agg = (silver_df
+           .groupBy('site', 'event_date')
+           .agg(F.count(F.lit(1)).cast('bigint').alias('n_observations'),
+                F.sum('temperature_c').cast(dec2).alias('sum_temperature_c'),
+                F.min('temperature_c').cast(dec2).alias('min_temperature_c'),
+                F.max('temperature_c').cast(dec2).alias('max_temperature_c'),
+                F.sum(late_flag).cast('bigint').alias('n_late'),
+                F.sum(F.when(F.col('temperature_c') > F.lit(25), F.lit(1)).otherwise(F.lit(0)))
+                 .cast('bigint').alias('n_above_25'),
+                F.countDistinct('sensor_id').cast('bigint').alias('n_sensors')))
+    # Derive mean/rate from the additive components (SUM / COUNT), not AVG.
+    return agg.select(
+        'site', 'event_date', 'n_observations', 'sum_temperature_c',
+        (F.col('sum_temperature_c') / F.col('n_observations')).cast(dec6).alias('mean_temperature_c'),
+        'min_temperature_c', 'max_temperature_c', 'n_late',
+        (F.col('n_late') / F.col('n_observations')).cast(dec6).alias('late_rate'),
+        'n_above_25', 'n_sensors')
 
 
 def choose_revisions(changes_df):
@@ -23,7 +44,28 @@ def choose_revisions(changes_df):
     Use a deterministic Window and ROW_NUMBER. Return original columns;
     do not leak the helper rank column into a Delta table.
     """
-    raise NotImplementedError('TODO 2: choose_revisions')
+    from pyspark.sql import Window, functions as F
+
+    # An exact priority tie has no winner under the supplied contract.
+    priority = ['record_id', 'ingest_time_utc', 'source_object', 'source_row']
+    ambiguous = (changes_df.groupBy(*priority).count()
+                 .where(F.col('count') > 1).limit(1).count())
+    if ambiguous:
+        raise ValueError('AMBIGUOUS_REVISION_ORDER: duplicate priority keys')
+
+    # Avoid overwriting any original column, including a similarly named one.
+    rank_column = '__lab3_revision_rank'
+    existing_names = {name.casefold() for name in changes_df.columns}
+    while rank_column.casefold() in existing_names:
+        rank_column += '_'
+
+    order = Window.partitionBy('record_id').orderBy(
+        F.col('ingest_time_utc').desc(),
+        F.col('source_object').asc(),
+        F.col('source_row').asc())
+    return (changes_df.withColumn(rank_column, F.row_number().over(order))
+            .where(F.col(rank_column) == 1)
+            .drop(rank_column))
 
 
 def merge_silver(spark, silver_path, winners_df):
@@ -33,7 +75,24 @@ def merge_silver(spark, silver_path, winners_df):
     Equal provenance and ingest timestamp is a no-op. Stale data must not
     replace a newer value. The runner validates the WHOLE batch first.
     """
-    raise NotImplementedError('TODO 3: merge_silver')
+    from delta.tables import DeltaTable
+    from pyspark.sql import functions as F
+
+    target = DeltaTable.forPath(spark, silver_path)
+    newer = (
+        (F.col('s.ingest_time_utc') > F.col('t.ingest_time_utc'))
+        | ((F.col('s.ingest_time_utc') == F.col('t.ingest_time_utc'))
+           & (F.col('s.source_object') < F.col('t.source_object')))
+        | ((F.col('s.ingest_time_utc') == F.col('t.ingest_time_utc'))
+           & (F.col('s.source_object') == F.col('t.source_object'))
+           & (F.col('s.source_row') < F.col('t.source_row')))
+    )
+    (target.alias('t')
+     .merge(winners_df.alias('s'), F.col('t.record_id') == F.col('s.record_id'))
+     .whenMatchedUpdateAll(condition=newer)
+     .whenNotMatchedInsertAll()
+     .execute())
+    return None
 
 
 def benchmark_query(df):
