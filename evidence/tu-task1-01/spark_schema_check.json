@@ -1,0 +1,77 @@
+{
+  "schema_id": "lab3-silver-v1",
+  "schema_pass": true,
+  "expected_columns": 11,
+  "actual_columns": 11,
+  "row_count": 9610,
+  "row_count_pass": true,
+  "timezone": "UTC",
+  "columns": [
+    {
+      "column": "record_id",
+      "expected": "STRING",
+      "actual": "string",
+      "passed": true
+    },
+    {
+      "column": "sensor_id",
+      "expected": "STRING",
+      "actual": "string",
+      "passed": true
+    },
+    {
+      "column": "site",
+      "expected": "STRING",
+      "actual": "string",
+      "passed": true
+    },
+    {
+      "column": "event_time_utc",
+      "expected": "TIMESTAMP",
+      "actual": "timestamp",
+      "passed": true
+    },
+    {
+      "column": "ingest_time_utc",
+      "expected": "TIMESTAMP",
+      "actual": "timestamp",
+      "passed": true
+    },
+    {
+      "column": "temperature_c",
+      "expected": "DECIMAL(8,2)",
+      "actual": "decimal(8,2)",
+      "passed": true
+    },
+    {
+      "column": "is_late",
+      "expected": "BOOLEAN",
+      "actual": "boolean",
+      "passed": true
+    },
+    {
+      "column": "source_object",
+      "expected": "STRING",
+      "actual": "string",
+      "passed": true
+    },
+    {
+      "column": "source_row",
+      "expected": "BIGINT",
+      "actual": "bigint",
+      "passed": true
+    },
+    {
+      "column": "source_sha256",
+      "expected": "STRING",
+      "actual": "string",
+      "passed": true
+    },
+    {
+      "column": "event_date",
+      "expected": "DATE",
+      "actual": "date",
+      "passed": true
+    }
+  ]
+}
