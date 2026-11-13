@@ -96,13 +96,32 @@ def merge_silver(spark, silver_path, winners_df):
 
 
 def benchmark_query(df):
-    """TODO 4 (T4). Both layouts must evaluate exactly this query:
-    filter event_date = DATE '2026-02-06'; group by site; return
-    site, n_observations, sum_temperature_c (decimal(18,2)), n_late.
-    Do not use replica_id in the GROUP BY. Do not call collect() here.
-    The supplied runner materializes this bounded aggregate for timing.
-    """
-    raise NotImplementedError('TODO 4: benchmark_query')
+    from pyspark.sql import functions as F
+
+    return (
+        df.where(
+            F.col("event_date") == F.to_date(F.lit("2026-02-06"))
+        )
+        .groupBy("site")
+        .agg(
+            F.count(F.lit(1)).cast("bigint").alias("n_observations"),
+            F.sum("temperature_c")
+             .cast("decimal(18,2)")
+             .alias("sum_temperature_c"),
+            F.sum(
+                F.when(F.col("is_late"), F.lit(1))
+                 .otherwise(F.lit(0))
+            )
+            .cast("bigint")
+            .alias("n_late")
+        )
+        .select(
+            "site",
+            "n_observations",
+            "sum_temperature_c",
+            "n_late"
+        )
+    )
 
 
 def validate_release_binding(draft, expected):
