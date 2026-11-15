@@ -1,0 +1,12 @@
+{
+  "run_id": "8618df90-f09b-420d-a9c1-c77d204f83f8",
+  "job": "benchmark",
+  "status": "COMPLETE",
+  "input_manifest_sha256": "3cdfc84b26d290100b39ce65d4ff7cb22839f4021b9caf26897c8a4ff68091a2",
+  "implementation_sha256": "7a71956ba6645859fcdf67549d1ba42857e3e97c3987dc77bdf822ff8fdf33aa",
+  "scaffold_sha256": "e2752b2de7f00ace58938c5424ecbc7a435d11f785e99ade103a5f3e2e14cf97",
+  "outputs": [
+    "/tmp/lab3-lakehouse/g01/attempt01/benchmarks/8618df90-f09b-420d-a9c1-c77d204f83f8/unpartitioned",
+    "/tmp/lab3-lakehouse/g01/attempt01/benchmarks/8618df90-f09b-420d-a9c1-c77d204f83f8/date_partitioned"
+  ]
+}
